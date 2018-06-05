@@ -72,7 +72,7 @@ corrplot(M1, type="lower", method="color",
 #=====================================================================================
 #             Create features
 #=====================================================================================
-#BUG! you must split by city first, or else you roll over between
+#BUG! you must split by city first, or else you roll over between cities
 num <- 3
 full.X.comp$precip1_ms3 <- rollapplyr(full.X.comp$precipitation_amt_mm,list(-(num:1)),sum,fill=NA)
 full.X.comp$precip2_ms3 <- rollapplyr(full.X.comp$reanalysis_precip_amt_kg_per_m2,list(-(num:1)),sum,fill=NA)
@@ -83,6 +83,24 @@ full.X.comp$maxTemp2_ms3 <- rollapplyr(full.X.comp$reanalysis_max_air_temp_k,lis
 full.X.comp$humid_ms3 <- rollapplyr(full.X.comp$reanalysis_specific_humidity_g_per_kg,list(-(num:1)),sum,fill=NA)
 full.X.comp$ndvi_all <- full.X.comp$ndvi_ne + full.X.comp$ndvi_nw + full.X.comp$ndvi_se + full.X.comp$ndvi_sw
 full.X.comp$ndvi_ms3 <- rollapplyr(full.X.comp$ndvi_all,list(-(num:1)),sum,fill=NA)
+
+mydel <- full.X.comp %>% mutate(season= case_when(
+  weekofyear > (52-4) ~ as.integer(0),
+  weekofyear > (52-4-12) ~ as.integer(3),
+  weekofyear > (52-4-12-12) ~ as.integer(2),
+  weekofyear > (52-4-12-12-12) ~ as.integer(1),
+  TRUE ~ as.integer(0)
+))
+
+mydel %<>% mutate(year = as.integer(format(as.Date(week_start_date),'%Y')))
+
+mydel %<>% group_by(city, year, season) %>% mutate(seas_avg_temp = mean(reanalysis_avg_temp_k))
+mydel %<>% group_by(city, year, season) %>% mutate(seas_min_temp = mean(reanalysis_min_air_temp_k))
+
+
+boxplot(full.X.comp$reanalysis_air_temp_k)
+
+mydel %>% filter(city=='sj') %>% select(seas_avg_temp, seas_min_temp)
 
 full.sj <- full.X.comp %>% filter(city=='sj')
 full.iq <- full.X.comp %>% filter(city=='iq')
