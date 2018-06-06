@@ -69,22 +69,10 @@ corrplot(M1, type="lower", method="color",
          col=brewer.pal(n=8, name="RdBu"),diag=FALSE)
 #reanalysis_sat_precip_amt_mm is perfectly correlated with precipitation_amt_mm, just use that
 
+
 #=====================================================================================
 #             Create features
 #=====================================================================================
-#BUG! you must split by city first, or else you roll over between
-num <- 3
-full.X.comp$precip1_ms3 <- rollapplyr(full.X.comp$precipitation_amt_mm,list(-(num:1)),sum,fill=NA)
-full.X.comp$precip2_ms3 <- rollapplyr(full.X.comp$reanalysis_precip_amt_kg_per_m2,list(-(num:1)),sum,fill=NA)
-full.X.comp$avgTemp1_ms3 <- rollapplyr(full.X.comp$station_avg_temp_c,list(-(num:1)),sum,fill=NA)
-full.X.comp$avgTemp2_ms3 <- rollapplyr(full.X.comp$reanalysis_avg_temp_k,list(-(num:1)),sum,fill=NA)
-full.X.comp$maxTemp1_ms3 <- rollapplyr(full.X.comp$station_max_temp_c,list(-(num:1)),sum,fill=NA)
-full.X.comp$maxTemp2_ms3 <- rollapplyr(full.X.comp$reanalysis_max_air_temp_k,list(-(num:1)),sum,fill=NA)
-full.X.comp$humid_ms3 <- rollapplyr(full.X.comp$reanalysis_specific_humidity_g_per_kg,list(-(num:1)),sum,fill=NA)
-full.X.comp$ndvi_all <- full.X.comp$ndvi_ne + full.X.comp$ndvi_nw + full.X.comp$ndvi_se + full.X.comp$ndvi_sw
-full.X.comp$ndvi_ms3 <- rollapplyr(full.X.comp$ndvi_all,list(-(num:1)),sum,fill=NA)
-
-
 add_group_summaries <- function(d, 
                                 groupingVars, 
                                 ...) {
@@ -96,58 +84,48 @@ add_group_summaries <- function(d,
   left_join(d, ds, by= groupingVars)
 }
 
-
-mydel <- full.X.comp
+#seasonal variables
 #todo: numerical indicator of season, Spring / Summer / Fall / Winter
 
-mydel %<>% add_group_summaries(c('city', 'year', 'weekofyear'),
+full.X.comp %<>% add_group_summaries(c('city', 'year', 'weekofyear'),
                                seas_min_temp = mean(reanalysis_min_air_temp_k),
                                seas_max_temp = mean(reanalysis_max_air_temp_k))
-boxplot(mydel$seas_max_temp)
-
+#boxplot(full.X.comp$seas_max_temp)
 
 
 
 full.sj <- full.X.comp %>% filter(city=='sj')
 full.iq <- full.X.comp %>% filter(city=='iq')
-
-#Now let's create a new batch of features... this time focus on longer periods!
-
-full.sj$percip.lagw1 <- rollapplyr(full.sj$precipitation_amt_mm,list(-(7:1)),mean,fill=NA)
-full.sj$percip.lagw2 <- rollapplyr(full.sj$precipitation_amt_mm,list(-(14:8)),mean,fill=NA)
-full.sj$percip.lagw3 <- rollapplyr(full.sj$precipitation_amt_mm,list(-(21:15)),mean,fill=NA)
-full.iq$percip.lagw1 <- rollapplyr(full.iq$precipitation_amt_mm,list(-(7:1)),mean,fill=NA)
-full.iq$percip.lagw2 <- rollapplyr(full.iq$precipitation_amt_mm,list(-(14:8)),mean,fill=NA)
-full.iq$percip.lagw3 <- rollapplyr(full.iq$precipitation_amt_mm,list(-(21:15)),mean,fill=NA)
-
-full.sj$temp.lagw1 <- rollapplyr(full.sj$reanalysis_avg_temp_k,list(-(7:1)),mean,fill=NA)
-full.sj$temp.lagw2 <- rollapplyr(full.sj$reanalysis_avg_temp_k,list(-(14:8)),mean,fill=NA)
-full.sj$temp.lagw3 <- rollapplyr(full.sj$reanalysis_avg_temp_k,list(-(21:15)),mean,fill=NA)
-full.iq$temp.lagw1 <- rollapplyr(full.iq$reanalysis_avg_temp_k,list(-(7:1)),mean,fill=NA)
-full.iq$temp.lagw2 <- rollapplyr(full.iq$reanalysis_avg_temp_k,list(-(14:8)),mean,fill=NA)
-full.iq$temp.lagw3 <- rollapplyr(full.iq$reanalysis_avg_temp_k,list(-(21:15)),mean,fill=NA)
-
-full.sj$humid.lagw1 <- rollapplyr(full.sj$reanalysis_specific_humidity_g_per_kg,list(-(7:1)),mean,fill=NA)
-full.sj$humid.lagw2 <- rollapplyr(full.sj$reanalysis_specific_humidity_g_per_kg,list(-(14:8)),mean,fill=NA)
-full.sj$humid.lagw3 <- rollapplyr(full.sj$reanalysis_specific_humidity_g_per_kg,list(-(21:15)),mean,fill=NA)
-full.iq$humid.lagw1 <- rollapplyr(full.iq$reanalysis_specific_humidity_g_per_kg,list(-(7:1)),mean,fill=NA)
-full.iq$humid.lagw2 <- rollapplyr(full.iq$reanalysis_specific_humidity_g_per_kg,list(-(14:8)),mean,fill=NA)
-full.iq$humid.lagw3 <- rollapplyr(full.iq$reanalysis_specific_humidity_g_per_kg,list(-(21:15)),mean,fill=NA)
-
-full.sj$ndvi.lagw1 <- rollapplyr(full.sj$ndvi_all,list(-(7:1)),mean,fill=NA)
-full.sj$ndvi.lagw2 <- rollapplyr(full.sj$ndvi_all,list(-(14:8)),mean,fill=NA)
-full.sj$ndvi.lagw3 <- rollapplyr(full.sj$ndvi_all,list(-(21:15)),mean,fill=NA)
-full.iq$ndvi.lagw1 <- rollapplyr(full.iq$ndvi_all,list(-(7:1)),mean,fill=NA)
-full.iq$ndvi.lagw2 <- rollapplyr(full.iq$ndvi_all,list(-(14:8)),mean,fill=NA)
-full.iq$ndvi.lagw3 <- rollapplyr(full.iq$ndvi_all,list(-(21:15)),mean,fill=NA)
-
-
-
-
 nrow.sj.train <- train.X %>% filter(city=='sj') %>% nrow()
-nrow.iq.train <- train.X %>% filter(city=='iq') %>% nrow()
 nrow.sj.test <- test.X %>% filter(city=='sj') %>% nrow()
+nrow.iq.train <- train.X %>% filter(city=='iq') %>% nrow()
 nrow.iq.test <- test.X %>% filter(city=='iq') %>% nrow()
+sj.train <- head(full.sj, n=nrow.sj.train)
+sj.test <- tail(full.sj, n=nrow.sj.test)
+sj.cases <- train.y$total_cases
+
+ccf(sj.cases, sj.train$reanalysis_min_air_temp_k, main='CCF min_air_temp', 52) #8 and 9
+ccf(sj.cases, sj.train$reanalysis_max_air_temp_k, main='CCF max_air_temp') #7
+ccf(sj.cases, sj.train$precipitation_amt_mm, main='CCF precipitation') #2, 5, both very weak
+ccf(sj.cases, sj.train$reanalysis_relative_humidity_percent, main='CCF rel humidity') #3
+ccf(sj.cases, sj.train$reanalysis_avg_temp_k, main='CCF avg temp') #8
+acf(sj.cases)
+
+
+full.sj %<>% mutate(lag8_min_air_temp = lag(reanalysis_min_air_temp_k, 8))
+full.sj %<>% mutate(lag7_max_air_temp = lag(reanalysis_max_air_temp_k, 7))
+full.sj %<>% mutate(lag2_precip = lag(precipitation_amt_mm, 2))
+full.sj %<>% mutate(lag5_precip = lag(precipitation_amt_mm, 5))
+full.sj %<>% mutate(lag3_humid = lag(reanalysis_relative_humidity_percent, 3))
+full.sj %<>% mutate(lag8_avg_temp = lag(reanalysis_avg_temp_k, 8))
+
+full.iq %<>% mutate(lag8_min_air_temp = lag(reanalysis_min_air_temp_k, 8))
+full.iq %<>% mutate(lag7_max_air_temp = lag(reanalysis_max_air_temp_k, 7))
+full.iq %<>% mutate(lag2_precip = lag(precipitation_amt_mm, 2))
+full.iq %<>% mutate(lag5_precip = lag(precipitation_amt_mm, 5))
+full.iq %<>% mutate(lag3_humid = lag(reanalysis_relative_humidity_percent, 3))
+full.iq %<>% mutate(lag8_avg_temp = lag(reanalysis_avg_temp_k, 8))
+
 sj.train <- head(full.sj, n=nrow.sj.train)
 sj.test <- tail(full.sj, n=nrow.sj.test)
 iq.train <- head(full.iq, n=nrow.iq.train)
@@ -158,42 +136,12 @@ full.test <- rbind(sj.test, iq.test)
 full.X <- rbind(full.train, full.test)
 
 
-my.y <- train.y %>% filter(city=='sj') %>% select(total_cases)
-ccf(my.y$total_cases, sj.train$reanalysis_min_air_temp_k,my.lag, main='CCF min_air_temp') #8 and 9
-ccf(my.y$total_cases, sj.train$reanalysis_max_air_temp_k,my.lag, main='CCF max_air_temp') #6,7,8
-ccf(my.y$total_cases, sj.train$precipitation_amt_mm,my.lag, main='CCF precipitation') #2
-ccf(my.y$total_cases, sj.train$reanalysis_relative_humidity_percent,my.lag, main='CCF rel humidity') #3
-ccf(my.y$total_cases, sj.train$reanalysis_avg_temp_k, main='CCF avg temp') #8
-acf(my.y$total_cases)
-
-
-
-#impute missing values...
-#now recommend do NOT impute missing, since we'll have huge swaths of blanks
-full.X %>% is_missing()
-full.X.imp <- mice(data=full.X, method = 'rf', ntree=3)
-full.X.comp <- as.tibble(complete(full.X.imp, 1))
-full.X.comp %>% is_missing()
-#reanalysis_sat_precip_amt_mm could not be fully imputed, let's not use that predictor
-full.X.comp[is.na(full.X.comp$reanalysis_sat_precip_amt_mm),] %>% glimpse()
-rm(full.X.imp)
-
-
-
-#Now break them back into train / test set, now that imputation has finished...
-train.X <- head(full.X.comp, n=nrow(train.X))
-#train.X %>% is_missing()
-test.X <- tail(full.X.comp, n=nrow(test.X))
-#test.X %>% is_missing()
-
-
-
-
-
-
+#Now break them back into train / test set, now that feature creation has finished
+train.X <- head(full.X, n=nrow(train.X))
+test.X <- tail(full.X, n=nrow(test.X))
 
 #=====================================================================================
-#             Split data set into two cities
+#             Split data set into two cities, setup case lags
 #=====================================================================================
 train.X.sj <- train.X %>% filter(city=='sj')
 train.y.sj <- train.y %>% filter(city=='sj')
@@ -236,43 +184,14 @@ test.X.iq$case_lag3[1] <- train.X.iq$total_cases[(nrow(train.X.iq)-2)]
 test.X.iq$case_lag3[2] <- train.X.iq$total_cases[(nrow(train.X.iq)-1)]
 test.X.iq$case_lag3[3] <- train.X.iq$total_cases[(nrow(train.X.iq))]
 
-#=====================================================================================
-#             final imputation for missing values
-#=====================================================================================
-train.X.sj.imp <- mice(data=train.X.sj, method = 'rf', ntree=3)
-train.X.sj <- as.tibble(complete(train.X.sj.imp, 1))
-train.X.sj %>% is_missing()
-rm(train.X.sj.imp)
-train.X.iq.imp <- mice(data=train.X.iq, method = 'rf', ntree=3)
-train.X.iq <- as.tibble(complete(train.X.iq.imp, 1))
-train.X.iq %>% is_missing()
-rm(train.X.iq.imp)
-
-
-
-
-
-cust.xreg <- c('station_max_temp_c', 'station_avg_temp_c', 'precip1_ms3',
-               'reanalysis_specific_humidity_g_per_kg', 'case_lag1',
-               'ndvi_se', 'ndvi_sw','ndvi_ne','ndvi_nw')
-cust.xreg1 <- c('precip1_ms3', 'avgTemp1_ms3', 'maxTemp1_ms3', 'humid_ms3', 'ndvi_all', 'ndvi_ms3', 'case_lag1')
-cust.xreg2 <- c('precip2_ms3', 'avgTemp2_ms3', 'maxTemp2_ms3', 'humid_ms3', 'ndvi_all', 'ndvi_ms3', 'case_lag1')
-cust.xreg3 <- c('precip1_ms3', 'avgTemp2_ms3', 'ndvi_se', 'ndvi_sw','ndvi_ne','ndvi_nw', 'ndvi_ms3', 'case_lag1')
-
-cust.xreg4 <- c('case_lag1', 'percip.lagw1', 'percip.lagw2', 'percip.lagw3', 'temp.lagw1', 
-                'temp.lagw2', 'temp.lagw3', 'humid.lagw1', 'humid.lagw2', 'humid.lagw3')
-#,'ndvi.lagw1', 'ndvi.lagw2', 'ndvi.lagw3')
-
-cust.xreg.lag1 <- c('case_lag1', 'percip.lagw1', 'temp.lagw1', 'humid.lagw1', 'ndvi.lagw1')
-cust.xreg.lag2 <- c('case_lag1', 'percip.lagw2', 'temp.lagw2', 'humid.lagw2', 'ndvi.lagw2')
-cust.xreg.lag3 <- c('case_lag1', 'percip.lagw3', 'temp.lagw3', 'humid.lagw3', 'ndvi.lagw3')
-
-cust.xreg.caselag <- c('case_lag1', 'case_lag2','case_lag3','percip.lagw2', 'temp.lagw2', 'humid.lagw2', 'ndvi.lagw2')
-
 
 #=====================================================================================
-#             Create the model
+#             Prepare for modelling
 #=====================================================================================
+
+cust.xreg <- c('case_lag1', 'case_lag2','case_lag3',
+                       'lag8_min_air_temp', 'lag7_max_air_temp',
+                       'lag2_precip', 'lag5_precip','lag3_humid','lag8_avg_temp')
 
 get_best_model <- function(input.data, input.xreg) {
   best_mae <- 1000
@@ -321,38 +240,8 @@ get_best_model <- function(input.data, input.xreg) {
   return(X.fit)
 }
 
-best_sj <- get_best_model(train.X.sj, cust.xreg) #5.8, 5.9
-best_sj <- get_best_model(train.X.sj, cust.xreg1) #6.3, 6.3
-best_sj <- get_best_model(train.X.sj, c(cust.xreg, cust.xreg1)) #4.8, 4.9
-best_sj <- get_best_model(train.X.sj, cust.xreg2) #6.4, 6.3
-best_sj <- get_best_model(train.X.sj, c(cust.xreg, cust.xreg2)) #4.4, 4.6
-best_sj <- get_best_model(train.X.sj, c(cust.xreg, cust.xreg2, cust.xreg1)) #3.9,4.2 
-best_sj <- get_best_model(train.X.sj, c(cust.xreg, cust.xreg3))
-
-#remove first year and a half since apparently disease not common before then
-best_iq <- get_best_model(tail(train.X.iq,n=(520-52-26)) , cust.xreg) #2.2
-best_iq <- get_best_model(tail(train.X.iq,n=(520-52-26)) , cust.xreg1) #2.6, but big spikes!
-best_iq <- get_best_model(tail(train.X.iq,n=(520-52-26)) , c(cust.xreg, cust.xreg1)) #1.3
-best_iq <- get_best_model(tail(train.X.iq,n=(520-52-26)) , cust.xreg2) #2.6
-best_iq <- get_best_model(tail(train.X.iq,n=(520-52-26)) , c(cust.xreg, cust.xreg2)) #1.0
-best_iq <- get_best_model(tail(train.X.iq,n=(520-52-26)) , c(cust.xreg, cust.xreg2, cust.xreg1)) #0.66
-
-
-
-
-
-#=====================================================================================
-#             Now that we have best models, let's fit it to the test data
-#=====================================================================================
-
-test.xreg <- c(cust.xreg2, cust.xreg4) #11.3
-test.xreg <- c(cust.xreg.lag1) #9.2
-test.xreg <- c(cust.xreg.lag2) #7.9
-test.xreg <- c(cust.xreg.lag3) #10.5
-test.xreg <- c(cust.xreg.caselag, cust.xreg)
-
-xreg.sj = test.X.sj %>% select(test.xreg)
-best_sj <- get_best_model(train.X.sj, test.xreg)
+best_sj <- get_best_model(train.X.sj, cust.xreg)
+xreg.sj = test.X.sj %>% select(cust.xreg)
 for (i in (1:(nrow(test.X.sj)))) {
   point.fc <- forecast(best_sj, h=1, xreg=xreg.sj[i,])
   point.fc <- as.numeric(point.fc$mean)
@@ -368,17 +257,11 @@ for (i in (1:(nrow(test.X.sj)))) {
     }
   }
 }
-# we didn't forecast the last points, to avoid writing a lag1 that goes beyond the index. Let's do it now
-# point.fc <- forecast(best_sj, h=1, xreg=xreg.sj[(i+1),])
-# point.fc <- as.numeric(point.fc$mean)
-# if(point.fc < 0) {point.fc <- 0}
-# test.X.sj$predicted[(i+1)] <- point.fc
-
 plot(test.X.sj$predicted, type='l', main='SJ predicted cases')
 
 
-best_iq <- get_best_model(tail(train.X.iq,n=(520-52-26)) , test.xreg) #1.0
-xreg.iq = test.X.iq %>% select(test.xreg)
+xreg.iq = test.X.iq %>% select(cust.xreg)
+best_iq <- get_best_model(train.X.iq , cust.xreg) #1.0
 for (i in (1:(nrow(test.X.iq)))) {
   point.fc <- forecast(best_iq, h=1, xreg=xreg.iq[i,])
   point.fc <- as.numeric(point.fc$mean)
@@ -394,23 +277,9 @@ for (i in (1:(nrow(test.X.iq)))) {
     }
   }
 }
-# we didn't forecast the last point, to avoid writing a lag1 that goes beyond the index. Let's do it now
-# point.fc <- forecast(best_iq, h=1, xreg=xreg.iq[(i+1),])
-# point.fc <- as.numeric(point.fc$mean)
-# if(point.fc < 0) {point.fc <- 0}
-# test.X.iq$predicted[(i+1)] <- point.fc
 
 plot(test.X.iq$predicted, type='l', main='IQ predicted cases')
 
-
-
-
-
-
-
-#====================================================================
-#  Gather all the data for submission
-#====================================================================
 submission = read.csv('submission_format.csv')
 inner_join(submission, rbind(test.X.sj,test.X.iq), by=c('city', 'year', 'weekofyear')) %>%
   dplyr::select(city, year, weekofyear, total_cases=predicted) ->
@@ -419,4 +288,5 @@ inner_join(submission, rbind(test.X.sj,test.X.iq), by=c('city', 'year', 'weekofy
 prediction.df$total_cases <- round(prediction.df$total_cases)
 
 write.csv(prediction.df, file='AdamsStewartSubmission.csv', row.names = FALSE)
+
 
