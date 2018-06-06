@@ -403,8 +403,13 @@ for (i in (1:(nrow(test.X.sj)))) {
 plot(test.X.sj$predicted, type='l', main='SJ predicted cases')
 
 
+
+
 xreg.iq = test.X.iq %>% select(cust.xreg)
-best_iq <- get_best_model(train.X.iq , cust.xreg) #1.0
+best_model <- get_best_model(train.X.iq, cust.xreg,1)
+validate_perf(best_model, train.X.sj %>% select(cust.xreg), train.X.sj)
+
+
 for (i in (1:(nrow(test.X.iq)))) {
   point.fc <- forecast(best_iq, h=1, xreg=xreg.iq[i,])
   point.fc <- as.numeric(point.fc$mean)
