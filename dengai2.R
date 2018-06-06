@@ -84,6 +84,30 @@ full.X.comp$humid_ms3 <- rollapplyr(full.X.comp$reanalysis_specific_humidity_g_p
 full.X.comp$ndvi_all <- full.X.comp$ndvi_ne + full.X.comp$ndvi_nw + full.X.comp$ndvi_se + full.X.comp$ndvi_sw
 full.X.comp$ndvi_ms3 <- rollapplyr(full.X.comp$ndvi_all,list(-(num:1)),sum,fill=NA)
 
+
+add_group_summaries <- function(d, 
+                                groupingVars, 
+                                ...) {
+  groupingSyms <- rlang::syms(groupingVars)
+  d <- ungroup(d) # just in case
+  dg <- group_by(d, !!!groupingSyms)
+  ds <- summarize(dg, ...)
+  ds <- ungroup(ds)
+  left_join(d, ds, by= groupingVars)
+}
+
+#seasonal variables
+mydel <- full.X.comp
+#numerical indicator of season, Spring / Summer / Fall / Winter
+
+mydel %<>% add_group_summaries(c('city', 'year', 'weekofyear'),
+                               seas_min_temp = mean(reanalysis_min_air_temp_k),
+                               seas_max_temp = mean(reanalysis_max_air_temp_k))
+boxplot(mydel$seas_max_temp)
+
+
+
+
 full.sj <- full.X.comp %>% filter(city=='sj')
 full.iq <- full.X.comp %>% filter(city=='iq')
 
@@ -118,6 +142,8 @@ full.iq$ndvi.lagw2 <- rollapplyr(full.iq$ndvi_all,list(-(14:8)),mean,fill=NA)
 full.iq$ndvi.lagw3 <- rollapplyr(full.iq$ndvi_all,list(-(21:15)),mean,fill=NA)
 
 
+
+
 nrow.sj.train <- train.X %>% filter(city=='sj') %>% nrow()
 nrow.iq.train <- train.X %>% filter(city=='iq') %>% nrow()
 nrow.sj.test <- test.X %>% filter(city=='sj') %>% nrow()
@@ -131,7 +157,19 @@ full.train <- rbind(sj.train, iq.train)
 full.test <- rbind(sj.test, iq.test)
 full.X <- rbind(full.train, full.test)
 
+
+my.y <- train.y %>% filter(city=='sj') %>% select(total_cases)
+ccf(my.y$total_cases, sj.train$reanalysis_min_air_temp_k,my.lag, main='CCF min_air_temp') #8 and 9
+ccf(my.y$total_cases, sj.train$reanalysis_max_air_temp_k,my.lag, main='CCF max_air_temp') #6,7,8
+ccf(my.y$total_cases, sj.train$precipitation_amt_mm,my.lag, main='CCF precipitation') #2
+ccf(my.y$total_cases, sj.train$reanalysis_relative_humidity_percent,my.lag, main='CCF rel humidity') #3
+ccf(my.y$total_cases, sj.train$reanalysis_avg_temp_k, main='CCF avg temp') #8
+acf(my.y$total_cases)
+
+
+
 #impute missing values...
+#now recommend do NOT impute missing, since we'll have huge swaths of blanks
 full.X %>% is_missing()
 full.X.imp <- mice(data=full.X, method = 'rf', ntree=3)
 full.X.comp <- as.tibble(complete(full.X.imp, 1))
