@@ -112,19 +112,90 @@ ccf(sj.cases, sj.train$reanalysis_avg_temp_k, main='CCF avg temp') #8
 acf(sj.cases)
 
 
-full.sj %<>% mutate(lag8_min_air_temp = lag(reanalysis_min_air_temp_k, 8))
-full.sj %<>% mutate(lag7_max_air_temp = lag(reanalysis_max_air_temp_k, 7))
-full.sj %<>% mutate(lag2_precip = lag(precipitation_amt_mm, 2))
-full.sj %<>% mutate(lag5_precip = lag(precipitation_amt_mm, 5))
-full.sj %<>% mutate(lag3_humid = lag(reanalysis_relative_humidity_percent, 3))
-full.sj %<>% mutate(lag8_avg_temp = lag(reanalysis_avg_temp_k, 8))
+check_ccf <- function(x, y, input.title) {
+  zz <- ccf(x, y, main=input.title)
+  cat('lag:',zz$lag[which.max(zz$acf)], 'max corr:', max(zz$acf),'\n')
+  cat('lag:',zz$lag[which.min(zz$acf)], 'min corr:', min(zz$acf))
+}
 
-full.iq %<>% mutate(lag8_min_air_temp = lag(reanalysis_min_air_temp_k, 8))
-full.iq %<>% mutate(lag7_max_air_temp = lag(reanalysis_max_air_temp_k, 7))
-full.iq %<>% mutate(lag2_precip = lag(precipitation_amt_mm, 2))
-full.iq %<>% mutate(lag5_precip = lag(precipitation_amt_mm, 5))
-full.iq %<>% mutate(lag3_humid = lag(reanalysis_relative_humidity_percent, 3))
-full.iq %<>% mutate(lag8_avg_temp = lag(reanalysis_avg_temp_k, 8))
+check_ccf(sj.cases, sj.train$weekofyear, 'weekofyear') #include at 0
+check_ccf(sj.cases, sj.train$ndvi_nw, 'ndvi_nw') #include at 10
+check_ccf(sj.cases, sj.train$ndvi_se, 'ndvi_se') #include at 21
+check_ccf(sj.cases, sj.train$precipitation_amt_mm, 'precipitation_amt_mm') #include at 2
+check_ccf(sj.cases, sj.train$reanalysis_air_temp_k, 'reanalysis_air_temp_k') #include at 8
+check_ccf(sj.cases, sj.train$reanalysis_avg_temp_k, 'reanalysis_avg_temp_k') #include at 8
+check_ccf(sj.cases, sj.train$reanalysis_dew_point_temp_k, 'reanalysis_dew_point_temp_k') #include at 8
+check_ccf(sj.cases, sj.train$reanalysis_max_air_temp_k, 'reanalysis_max_air_temp_k') #include at 7
+check_ccf(sj.cases, sj.train$reanalysis_min_air_temp_k, 'reanalysis_min_air_temp_k') #include at 8
+check_ccf(sj.cases, sj.train$reanalysis_precip_amt_kg_per_m2, 'reanalysis_precip_amt_kg_per_m2') #include at 2
+check_ccf(sj.cases, sj.train$reanalysis_relative_humidity_percent, 'reanalysis_relative_humidity_percent') #include at 3
+check_ccf(sj.cases, sj.train$reanalysis_specific_humidity_g_per_kg, 'reanalysis_specific_humidity_g_per_kg') #include at 8
+check_ccf(sj.cases, sj.train$reanalysis_tdtr_k, 'reanalysis_tdtr_k') #include at 0
+check_ccf(sj.cases, sj.train$station_avg_temp_c, 'station_avg_temp_c') #include at 10
+check_ccf(sj.cases, sj.train$station_diur_temp_rng_c, 'station_diur_temp_rng_c') #include at 25
+check_ccf(sj.cases, sj.train$station_max_temp_c, 'station_max_temp_c') #include at 11
+check_ccf(sj.cases, sj.train$station_min_temp_c, 'station_min_temp_c') #include at 10
+check_ccf(sj.cases, sj.train$seas_min_temp, 'seas_min_temp') #include at 8
+
+full.sj %<>% mutate(lag10_ndvi_nw = lag(ndvi_nw, 10))
+full.sj %<>% mutate(lag21_ndvi_se = lag(ndvi_se, 21))
+full.sj %<>% mutate(lag2_precipitation_amt_mm = lag(precipitation_amt_mm, 2))
+full.sj %<>% mutate(lag8_reanalysis_air_temp_k = lag(reanalysis_air_temp_k, 8))
+full.sj %<>% mutate(lag8_reanalysis_avg_temp_k = lag(reanalysis_avg_temp_k, 8))
+full.sj %<>% mutate(lag8_reanalysis_dew_point_temp_k = lag(reanalysis_dew_point_temp_k, 8))
+full.sj %<>% mutate(lag7_reanalysis_max_air_temp_k = lag(reanalysis_max_air_temp_k, 7))
+full.sj %<>% mutate(lag8_reanalysis_min_air_temp_k = lag(reanalysis_min_air_temp_k, 8))
+full.sj %<>% mutate(lag2_reanalysis_precip_amt_kg_per_m2 = lag(reanalysis_precip_amt_kg_per_m2, 2))
+full.sj %<>% mutate(lag3_reanalysis_relative_humidity_percent = lag(reanalysis_relative_humidity_percent, 3))
+full.sj %<>% mutate(lag8_reanalysis_specific_humidity_g_per_kg = lag(reanalysis_specific_humidity_g_per_kg, 8))
+full.sj %<>% mutate(lag10_station_avg_temp_c = lag(station_avg_temp_c, 10))
+full.sj %<>% mutate(lag25_station_diur_temp_rng_c = lag(station_diur_temp_rng_c, 25))
+full.sj %<>% mutate(lag11_station_max_temp_c = lag(station_max_temp_c, 11))
+full.sj %<>% mutate(lag10_station_min_temp_c = lag(station_min_temp_c, 10))
+full.sj %<>% mutate(lag8_seas_min_temp = lag(seas_min_temp, 8))
+
+
+full.iq %<>% mutate(lag10_ndvi_nw = lag(ndvi_nw, 10))
+full.iq %<>% mutate(lag21_ndvi_se = lag(ndvi_se, 21))
+full.iq %<>% mutate(lag2_precipitation_amt_mm = lag(precipitation_amt_mm, 2))
+full.iq %<>% mutate(lag8_reanalysis_air_temp_k = lag(reanalysis_air_temp_k, 8))
+full.iq %<>% mutate(lag8_reanalysis_avg_temp_k = lag(reanalysis_avg_temp_k, 8))
+full.iq %<>% mutate(lag8_reanalysis_dew_point_temp_k = lag(reanalysis_dew_point_temp_k, 8))
+full.iq %<>% mutate(lag7_reanalysis_max_air_temp_k = lag(reanalysis_max_air_temp_k, 7))
+full.iq %<>% mutate(lag8_reanalysis_min_air_temp_k = lag(reanalysis_min_air_temp_k, 8))
+full.iq %<>% mutate(lag2_reanalysis_precip_amt_kg_per_m2 = lag(reanalysis_precip_amt_kg_per_m2, 2))
+full.iq %<>% mutate(lag3_reanalysis_relative_humidity_percent = lag(reanalysis_relative_humidity_percent, 3))
+full.iq %<>% mutate(lag8_reanalysis_specific_humidity_g_per_kg = lag(reanalysis_specific_humidity_g_per_kg, 8))
+full.iq %<>% mutate(lag10_station_avg_temp_c = lag(station_avg_temp_c, 10))
+full.iq %<>% mutate(lag25_station_diur_temp_rng_c = lag(station_diur_temp_rng_c, 25))
+full.iq %<>% mutate(lag11_station_max_temp_c = lag(station_max_temp_c, 11))
+full.iq %<>% mutate(lag10_station_min_temp_c = lag(station_min_temp_c, 10))
+full.iq %<>% mutate(lag8_seas_min_temp = lag(seas_min_temp, 8))
+
+
+main.xreg <- c('weekofyear','lag10_ndvi_nw','reanalysis_tdtr_k','lag10_ndvi_nw',
+               'lag21_ndvi_se', 'lag2_precipitation_amt_mm', 'lag8_reanalysis_air_temp_k',
+               'lag8_reanalysis_avg_temp_k','lag8_reanalysis_dew_point_temp_k',
+               'lag7_reanalysis_max_air_temp_k','lag8_reanalysis_min_air_temp_k',
+               'lag2_reanalysis_precip_amt_kg_per_m2', 'lag3_reanalysis_relative_humidity_percent',
+               'lag8_reanalysis_specific_humidity_g_per_kg','lag10_station_avg_temp_c',
+               'lag25_station_diur_temp_rng_c', 'lag11_station_max_temp_c',
+               'lag10_station_min_temp_c','lag8_seas_min_temp',
+               'case_lag1')
+
+
+# full.sj %<>% mutate(lag8_min_air_temp = lag(reanalysis_min_air_temp_k, 8))
+# full.sj %<>% mutate(lag7_max_air_temp = lag(reanalysis_max_air_temp_k, 7))
+# full.sj %<>% mutate(lag5_precip = lag(precipitation_amt_mm, 5))
+# full.sj %<>% mutate(lag3_humid = lag(reanalysis_relative_humidity_percent, 3))
+# full.sj %<>% mutate(lag8_avg_temp = lag(reanalysis_avg_temp_k, 8))
+
+# full.iq %<>% mutate(lag8_min_air_temp = lag(reanalysis_min_air_temp_k, 8))
+# full.iq %<>% mutate(lag7_max_air_temp = lag(reanalysis_max_air_temp_k, 7))
+# full.iq %<>% mutate(lag2_precip = lag(precipitation_amt_mm, 2))
+# full.iq %<>% mutate(lag5_precip = lag(precipitation_amt_mm, 5))
+# full.iq %<>% mutate(lag3_humid = lag(reanalysis_relative_humidity_percent, 3))
+# full.iq %<>% mutate(lag8_avg_temp = lag(reanalysis_avg_temp_k, 8))
 
 sj.train <- head(full.sj, n=nrow.sj.train)
 sj.test <- tail(full.sj, n=nrow.sj.test)
@@ -189,11 +260,8 @@ test.X.iq$case_lag3[3] <- train.X.iq$total_cases[(nrow(train.X.iq))]
 #             Prepare for modelling
 #=====================================================================================
 
-cust.xreg <- c('case_lag1', 'case_lag2','case_lag3',
-                       'lag8_min_air_temp', 'lag7_max_air_temp',
-                       'lag2_precip', 'lag5_precip','lag3_humid','lag8_avg_temp')
 
-get_best_model <- function(input.data, input.xreg) {
+get_best_model <- function(input.data, input.xreg, grid.len=3) {
   best_mae <- 1000
   true.mae = vector()
   split <- floor(nrow(input.data)*.2)
@@ -202,11 +270,11 @@ get_best_model <- function(input.data, input.xreg) {
   xreg.data = input.data %>% select(input.xreg)
   xreg.train <- xreg.data[1:(nrow(input.data)-split),]
   xreg.test <- xreg.data[(nrow(input.data)-split):nrow(input.data),]
-  grid = seq(1:3)
+  grid = seq(1:grid.len)
   
   
   for (i in grid) {
-    X.fit <- nnetar(X.train, p=1, repeats = 10, maxit=256, scale.inputs = TRUE, xreg=xreg.train)
+    X.fit <- nnetar(X.train, p=1, repeats = 2, scale.inputs = TRUE, xreg=xreg.train)
     X.fc <- forecast(X.fit, h=split, xreg=xreg.test)
     model.mae <- accuracy(X.fc)[3]
     
@@ -232,7 +300,7 @@ get_best_model <- function(input.data, input.xreg) {
     }
     cat('Iteration:', i, 'model.mae:', model.mae, ' true mae:', mae, '\n')
   }
-  X.fit <- nnetar(X.train, xreg=xreg.train, model = best_fit)
+  X.fit <- nnetar(X.train, xreg=xreg.train, maxit=256, model = best_fit)
   X.fc <- forecast(X.fit, h=split, xreg=xreg.test)
   plot(X.fc, type='l')
   lines(X.test,col='red')
@@ -240,8 +308,83 @@ get_best_model <- function(input.data, input.xreg) {
   return(X.fit)
 }
 
-best_sj <- get_best_model(train.X.sj, cust.xreg)
-xreg.sj = test.X.sj %>% select(cust.xreg)
+validate_perf <- function(input.model, input.xreg, input.train.X) {
+  #best_model <- get_best_model(train.X.sj, cust.xreg)
+  #xreg = train.X.sj %>% select(cust.xreg)
+  model.predicted <- input.train.X$total_cases
+  
+  split <- floor(nrow(input.xreg)*.8)
+  
+  for (i in (split:nrow(input.xreg))) {
+    point.fc <- forecast(input.model, h=1, xreg=input.xreg[i,])
+    point.fc <- as.numeric(point.fc$mean)
+    if(point.fc < 0) {point.fc <- 0}
+    model.predicted[i] <- point.fc
+    if (i<(nrow(input.xreg)-1)) {
+      input.xreg$case_lag1[i+1] <- point.fc
+      if (i<(nrow(input.xreg)-2) & 'case_lag2' %in% colnames(input.xreg)) {
+        input.xreg$case_lag2[i+2] <- point.fc
+        if (i<(nrow(input.xreg)-3) & 'case_lag3' %in% colnames(input.xreg)) {
+          input.xreg$case_lag3[i+3] <- point.fc
+        }
+      }
+    }
+  }
+  print(mean(abs(model.predicted - input.train.X$total_cases)))
+  plot(input.train.X$total_cases, type='l', xlim=c(split,nrow(input.xreg)))
+  lines(model.predicted, col='blue')
+}
+
+
+main.xreg <- c('weekofyear','reanalysis_tdtr_k','lag10_ndvi_nw',
+               'lag21_ndvi_se', 'lag2_precipitation_amt_mm', 'lag8_reanalysis_air_temp_k',
+               'lag8_reanalysis_avg_temp_k','lag8_reanalysis_dew_point_temp_k',
+               'lag7_reanalysis_max_air_temp_k','lag8_reanalysis_min_air_temp_k',
+               'lag2_reanalysis_precip_amt_kg_per_m2', 'lag3_reanalysis_relative_humidity_percent',
+               'lag8_reanalysis_specific_humidity_g_per_kg','lag10_station_avg_temp_c',
+               'lag25_station_diur_temp_rng_c', 'lag11_station_max_temp_c',
+               'lag10_station_min_temp_c','lag8_seas_min_temp',
+               'case_lag1')
+
+cust.xreg <- c('weekofyear','reanalysis_tdtr_k',
+               'lag2_precipitation_amt_mm',
+               'lag8_reanalysis_avg_temp_k','lag8_reanalysis_dew_point_temp_k',
+               'lag7_reanalysis_max_air_temp_k','lag8_reanalysis_min_air_temp_k',
+               'lag11_station_max_temp_c',
+               'lag10_station_min_temp_c',
+               'case_lag1')
+
+
+best_model <- get_best_model(train.X.sj, main.xreg,1)
+best_model <- get_best_model(train.X.sj, cust.xreg,1)
+validate_perf(best_model, train.X.sj %>% select(main.xreg), train.X.sj)
+
+
+# xreg = train.X.sj %>% select(cust.xreg)
+# model.predicted <- train.X.sj$total_cases
+# 
+# split <- floor(nrow(xreg)*.8)
+# 
+# for (i in (split:nrow(xreg))) {
+#   point.fc <- forecast(best_model, h=1, xreg=xreg[i,])
+#   point.fc <- as.numeric(point.fc$mean)
+#   if(point.fc < 0) {point.fc <- 0}
+#   model.predicted[i] <- point.fc
+#   if (i<(nrow(xreg)-1)) {
+#     xreg$case_lag1[i+1] <- point.fc
+#     if (i<(nrow(xreg)-2) & 'case_lag2' %in% colnames(xreg)) {
+#       xreg$case_lag2[i+2] <- point.fc
+#       if (i<(nrow(xreg)-3) & 'case_lag3' %in% colnames(xreg)) {
+#         xreg$case_lag3[i+3] <- point.fc
+#       }
+#     }
+#   }
+# }
+# mean(abs(model.predicted - train.X.sj$total_cases))
+# plot(train.X.sj$total_cases, type='l', xlim=c(750,933))
+# lines(model.predicted, col='blue')
+
+
 for (i in (1:(nrow(test.X.sj)))) {
   point.fc <- forecast(best_sj, h=1, xreg=xreg.sj[i,])
   point.fc <- as.numeric(point.fc$mean)
