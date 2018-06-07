@@ -1,5 +1,5 @@
 rm(list=ls())
-pkgs <- c('tidyverse','tidyimpute', 'tibbletime', 'corrplot', 'magrittr', 'zoo', 'RColorBrewer', 'gridExtra','MASS','mice', 'forecast')
+pkgs <- c('tidyverse','tidyimpute', 'tibbletime', 'data.table', 'corrplot', 'magrittr', 'zoo', 'RColorBrewer', 'gridExtra','MASS','mice', 'forecast')
 invisible(lapply(pkgs, require, character.only = T))
 rm(pkgs)
 select <- dplyr::select
@@ -95,9 +95,6 @@ full.X.comp %<>% add_group_summaries(c('city', 'year', 'season'),
 
 full.sj <- full.X.comp %>% filter(city=='sj')
 full.iq <- full.X.comp %>% filter(city=='iq')
-
-library(data.table)
-
 
 zz<-full.sj %>% select(-c(city, year,weekofyear, week_start_date, season))
 zz.colnames <- zz%>%colnames()
@@ -243,7 +240,8 @@ get_best_model <- function(input.data, input.xreg, grid.len=3) {
   
   
   for (i in grid) {
-    X.fit <- nnetar(X.train, p=1, repeats = 2, scale.inputs = TRUE, xreg=xreg.train, MaxNWts=6000)
+    #X.fit <- nnetar(X.train, p=1, repeats = 2, scale.inputs = TRUE, xreg=xreg.train, MaxNWts=6000)
+    X.fit <- nnetar(X.train, p=1, repeats = 2, scale.inputs = TRUE, xreg=xreg.train)
     X.fc <- forecast(X.fit, h=split, xreg=xreg.test)
     model.mae <- accuracy(X.fc)[3]
     
@@ -269,11 +267,13 @@ get_best_model <- function(input.data, input.xreg, grid.len=3) {
     }
     cat('Iteration:', i, 'model.mae:', model.mae, ' true mae:', mae, '\n')
   }
-  X.fit <- nnetar(X.train, xreg=xreg.train, maxit=256, model = best_fit, MaxNWts=6000)
+  #X.fit <- nnetar(X.train, xreg=xreg.train, maxit=256, model = best_fit, MaxNWts=6000)
+  X.fit <- nnetar(X.train, xreg=xreg.train, maxit=256, model = best_fit)
   X.fc <- forecast(X.fit, h=split, xreg=xreg.test)
   plot(X.fc, type='l')
   lines(X.test,col='red')
-  X.fit <- nnetar(ts(input.data$total_cases, frequency=52), xreg=xreg.data, model = best_fit, MaxNWts=6000)
+  #X.fit <- nnetar(ts(input.data$total_cases, frequency=52), xreg=xreg.data, model = best_fit, MaxNWts=6000)
+  X.fit <- nnetar(ts(input.data$total_cases, frequency=52), xreg=xreg.data, model = best_fit)
   return(X.fit)
 }
 
@@ -303,6 +303,27 @@ validate_perf <- function(input.model, input.xreg, input.train.X) {
   plot(input.train.X$total_cases, type='l', xlim=c(split,nrow(input.xreg)))
   lines(model.predicted, col='blue')
 }
+test_forecast <- function(input.model, input.xreg, input.test.X) {
+  return.df = input.test.X
+  xreg = input.test.X %>% select(input.xreg)
+  for (i in (1:(nrow(return.df)))) {
+    point.fc <- forecast(input.model, h=1, xreg=xreg[i,])
+    point.fc <- as.numeric(point.fc$mean)
+    if(point.fc < 0) {point.fc <- 0}
+    return.df$predicted[i] <- point.fc
+    if (i<(nrow(return.df)-1)) {
+      xreg$case_lag1[i+1] <- point.fc
+      if (i<(nrow(return.df)-2) & 'case_lag2' %in% colnames(input.xreg)) {
+        xreg$case_lag2[i+2] <- point.fc
+        if (i<(nrow(return.df)-3) & 'case_lag3' %in% colnames(input.xreg)) {
+          xreg$case_lag3[i+3] <- point.fc
+        }
+      }
+    }
+  }
+  plot(return.df$predicted, type='l', main='SJ predicted cases')
+  return(return.df)
+}
 
 
 full_model <- get_best_model(train.X.sj, c(xreg.full,'case_lag1'),1)
@@ -327,26 +348,26 @@ for (i in (1:(nrow(test.X.sj)))) {
 plot(test.X.sj$predicted, type='l', main='SJ predicted cases')
 
 
-full_model <- get_best_model(train.X.sj, c(xreg.full,'case_lag1'),1)
-validate_perf(full_model, train.X.sj %>% select(c(xreg.full,'case_lag1')), train.X.sj)
-
-xreg.sj = test.X.sj %>% select(c(xreg.full,'case_lag1'))
-for (i in (1:(nrow(test.X.sj)))) {
-  point.fc <- forecast(full_model, h=1, xreg=xreg.sj[i,])
-  point.fc <- as.numeric(point.fc$mean)
-  if(point.fc < 0) {point.fc <- 0}
-  test.X.sj$predicted[i] <- point.fc
-  if (i<(nrow(test.X.sj)-1)) {
-    xreg.sj$case_lag1[i+1] <- point.fc
-    if (i<(nrow(test.X.sj)-2) & 'case_lag2' %in% colnames(xreg.sj)) {
-      xreg.sj$case_lag2[i+2] <- point.fc
-      if (i<(nrow(test.X.sj)-3) & 'case_lag3' %in% colnames(xreg.sj)) {
-        xreg.sj$case_lag3[i+3] <- point.fc
-      }
-    }
-  }
-}
-plot(test.X.sj$predicted, type='l', main='SJ predicted cases')
+# full_model <- get_best_model(train.X.sj, c(xreg.full,'case_lag1'),1)
+# validate_perf(full_model, train.X.sj %>% select(c(xreg.full,'case_lag1')), train.X.sj)
+# 
+# xreg.sj = test.X.sj %>% select(c(xreg.full,'case_lag1'))
+# for (i in (1:(nrow(test.X.sj)))) {
+#   point.fc <- forecast(full_model, h=1, xreg=xreg.sj[i,])
+#   point.fc <- as.numeric(point.fc$mean)
+#   if(point.fc < 0) {point.fc <- 0}
+#   test.X.sj$predicted[i] <- point.fc
+#   if (i<(nrow(test.X.sj)-1)) {
+#     xreg.sj$case_lag1[i+1] <- point.fc
+#     if (i<(nrow(test.X.sj)-2) & 'case_lag2' %in% colnames(xreg.sj)) {
+#       xreg.sj$case_lag2[i+2] <- point.fc
+#       if (i<(nrow(test.X.sj)-3) & 'case_lag3' %in% colnames(xreg.sj)) {
+#         xreg.sj$case_lag3[i+3] <- point.fc
+#       }
+#     }
+#   }
+# }
+# plot(test.X.sj$predicted, type='l', main='SJ predicted cases')
 
 
 full_model <- get_best_model(train.X.iq, c(xreg.full,'case_lag1'),1)
@@ -379,5 +400,42 @@ prediction.df$total_cases <- round(prediction.df$total_cases)
 
 write.csv(prediction.df, file='AdamsStewartSubmission.csv', row.names = FALSE)
 
+#================================================================
+#    Now lets tweak to pick out important vars
+#================================================================
+rf.select <- train.X.sj %>% select(-c(week_start_date, city, year))
+rf.select <- ungroup(rf.select)
+split <- floor(nrow(rf.select)*.2)
+y.train <- ts(rf.select$total_cases[1:(nrow(rf.select)-split)], frequency = 52)
+y.val <- ts(rf.select$total_cases[(nrow(rf.select)-split):nrow(rf.select)], frequency = 52, start=(end(y.train) + c(0,1)))
+X.all <- rf.select %>% select(-c(total_cases))
+X.train <- X.all[1:(nrow(X.all)-split),]
+X.val <- X.all[(nrow(X.all)-split):nrow(X.all),]
+
+library(party)
+cf1 <- cforest(y.train ~ ., data=X.train, control=cforest_unbiased(mtry=2, ntree=50))
+varimp(cf1, conditional = TRUE)
+v <- varimpAUC(cf1)
+v <- sort(abs(v), decreasing = TRUE)
+barplot(v, decreasing = TRUE)
+cat(paste(names(v), round(v,2), sep=':', collapse='\n'))
+cust.xreg10 <- names(v)[1:10]
+cust.xreg15 <- names(v)[1:15]
+cust.xreg20 <- names(v)[1:20]
+
+#=============================================================
+#      Does it perform better?
+#=============================================================
+cust10_model <- get_best_model(train.X.sj, c(cust.xreg10),1)
+validate_perf(cust10_model, train.X.sj %>% select(c(cust.xreg10)), train.X.sj)
+sj.fc <- test_forecast(cust10_model, cust.xreg10, test.X.sj)
+
+cust15_model <- get_best_model(train.X.sj, c(cust.xreg15),1)
+validate_perf(cust15_model, train.X.sj %>% select(c(cust.xreg15)), train.X.sj)
+sj.fc <- test_forecast(cust15_model, cust.xreg15, test.X.sj)
+
+cust20_model <- get_best_model(train.X.sj, c(cust.xreg20),1)
+validate_perf(cust20_model, train.X.sj %>% select(c(cust.xreg20)), train.X.sj)
+sj.fc <- test_forecast(cust20_model, cust.xreg20, test.X.sj)
 
 
