@@ -253,35 +253,25 @@ get_best_model <- function(input.data, input.xreg, grid.len=3, weights=1000) {
     X.fc <- forecast(X.fit, h=split, xreg=xreg.test)
     model.mae <- accuracy(X.fc)[3]
     
-    #for (j in seq((nrow(input.data)-split),(nrow(input.data)-1) )) {
-    for (j in 1:nrow(xreg.test) ) {
-      #print(j)
-      point.fc <- forecast(X.fit, h=1, xreg=xreg.test[j,])
-      point.fc <- as.numeric(point.fc$mean)
-      if(point.fc < 0) {point.fc <- 0}
-      point.mae <- abs(point.fc - X.test[j])
-      true.mae <- append(true.mae, point.mae)
-      #paste(j, ":", true.mae)
-      # test.X.iq$predicted[i] <- point.fc
-      # xreg.iq$case_lag1[i+1] <- point.fc
-    }
-    
-    #print(mean(true.mae))
-    
-    mae <- mean(true.mae)
-    if (mae < best_mae) {
+    true.mae <- mean(abs(as.vector(tail(X.fc$fitted, n=(split+1)))-as.vector(tail(input.data$total_cases, n=(split+1)))))
+    if (true.mae < best_mae) {
       best_fit <- X.fit
-      best_mae <- mae
+      best_mae <- true.mae
     }
-    cat('Iteration:', i, 'model.mae:', model.mae, ' true mae:', mae, '\n')
+    cat('Iteration:', i, 'model.mae:', model.mae, ' validation mae:', true.mae, '\n')
   }
   X.fit <- nnetar(X.train, xreg=xreg.train, model = best_fit, MaxNWts=nMaxNWts)
   X.fc <- forecast(X.fit, h=split, xreg=xreg.test)
   plot(X.fc, type='l')
   lines(X.test,col='red')
+  #Note: the next line retrains the model on the full data set, so that future forecasts will start
+  #   from where the "end" of the training data cuts off. If you want to play with "valication forecasts",
+  #   Then comment-out the following line so that future forecasts will start from the 20%-end of the
+  #   training set, so you can review results with the hold out data.
   X.fit <- nnetar(ts(input.data$total_cases, frequency=52), xreg=xreg.data, model = best_fit, MaxNWts=nMaxNWts)
   return(X.fit)
 }
+
 
 validate_perf <- function(input.model, input.xreg, input.train.X) {
   #best_model <- get_best_model(train.X.sj, cust.xreg)
@@ -423,6 +413,8 @@ cust.xreg20 <- names(v)[1:20]
 #      Does it perform better?
 #=============================================================
 cust10_model <- get_best_model(train.X.sj, c(cust.xreg10),1)
+mean(abs(as.vector(tail(cust10_model$fitted, n=(split+1)))-as.vector(tail(train.X.sj$total_cases, n=(split+1)))))
+
 validate_perf(cust10_model, train.X.sj %>% select(c(cust.xreg10)), train.X.sj)
 sj.val.fc <- validate_perf_nocaselag(cust10_model, train.X.sj %>% select(c(cust.xreg10)), train.X.sj)
 sj.fc <- test_forecast(cust10_model, cust.xreg10, test.X.sj)
@@ -441,6 +433,9 @@ validate_perf_nocaselag(cust20_model, train.X.sj %>% select(c(cust.xreg20)), tra
 sj.fc <- test_forecast(cust20_model, cust.xreg20, test.X.sj)
 
 cust10_model_iq <- get_best_model(train.X.iq, c(cust.xreg10),1)
+mean(abs(as.vector(tail(cust10_model_iq$fitted, n=(split+1)))-as.vector(tail(train.X.iq$total_cases, n=(split+1)))))
+
+
 validate_perf(cust10_model_iq, train.X.iq %>% select(c(cust.xreg10)), train.X.iq)
 iq.val.fc <- validate_perf_nocaselag(cust10_model_iq, train.X.iq %>% select(c(cust.xreg10)), train.X.iq)
 iq.fc <- test_forecast(cust10_model_iq, cust.xreg10, test.X.iq)
